@@ -39,7 +39,7 @@ with open("data.json", "r") as file:
 
 
 class Car():
-    def __init__(self, name) -> None:
+    def __init__(self, name = "Car") -> None:
         self.name = name  # For identification purposes.
         self.defaults()   # Initializing defaults.
         self.weights = [] # Neural weights
@@ -146,7 +146,7 @@ class Car():
         )
         # As the car goes backwards, we kill it, praise[0] is the line behind it.
         #if self.intersect(square[0:2], praise[0]) and self.score == 0: return True
-        # ^ IF statement to uncomment if you came from move().
+    #!!! ^ IF statement to uncomment if you came from move().
         if len(self.scored) == len(praise): # If the car has finished the lap,
             self.scored = []                # ^ we should reset scored lines.
         for el in praise:
@@ -200,13 +200,14 @@ class Car():
             if self.collisions():                       # Check for collisions.
                 break
 
-W, H = 1920, 1080 # Width and height of the interface window.
-main_window = pg.display.set_mode((W, H)) # Initializing graphic system.
-background = pg.image.load("background.png") # The background.
-# A blank background may be loaded by uncommenting next line.
-#background = pg.Surface((W,H)); background.fill((30,30,30))
 
 if __name__ == "__main__":
+    W, H = 1920, 1080 # Width and height of the interface window.
+    main_window = pg.display.set_mode((W, H)) # Initializing graphic system.
+    background = pg.image.load("background.png") # The background.
+    # A blank background may be loaded by uncommenting next line.
+    #background = pg.Surface((W,H)); background.fill((30,30,30))
+
     # Initializing cars.
     for i in range(cars_number):
         cars.append(Car(i))
