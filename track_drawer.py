@@ -1,18 +1,19 @@
 # Ctrl + S      To save the track.
 # Ctrl + A      To select/unselect all dots.
-# Escape        To unselect selected dots.
+# Escape        To unselect selected dots or quit from Q button.
 # + or -        To change the size of the dots.
 # Use arrows to move selected dots.
 
 # Next buttons can be changed.
 # A             To add a dot. Simply hold the button and drag the mouse.
 # S             To select/unselect a dot under the cursor.
+# Q             To select dots using a rectangle. (press twice.)
 # D or Delete   To delete all selected dots.
-# C             To show/unshow how track ends connect.
 # W             To set the start position for the car.
+# C             To show/unshow how track ends connect.
 # L             To load an existing track.
 
-import os            # To manage dirs.
+
 import json          # To save data.
 import time          # For time.sleep().
 import pygame as pg  # For interface.
@@ -29,22 +30,26 @@ background.fill((60,60,60))                # Grey background.
 button_delay = 0.2                         # Pause after click.
 add_dot_button = pg.K_a
 select_dot_button = pg.K_s
+select_rectangle_button = pg.K_q           # Press twice to define start and end pos.
 delete_dot_button = pg.K_d                 # And Delete button.
 connect_ends_button = pg.K_c               # Connect/unconnect the ends of the track.
 set_start_pos_button = pg.K_w              # Set the start position for the car.
 load_track_button = pg.K_l                 # Load an existing track.
-# Other settings.
+# Track settings.
 track_size = 50                            # Half of the track width.
 dot_distance = 50  # In case you hold add_dot_button and drag the mouse.
 dot_radius = 5                             # Default dot radius.
 dot_speed = 2      # Move speed of the dot in pixels.
+# Program variables.
 connect_ends = False                       # Should the ends be visually connected.
 directory_to_use = ""
+selection_rectangle = []                   # Selection rectangle start cordinate.
 # Lists that are used in the program.
 dots = []            # List containing all of the dots (x,y).
 chosen_dots = []     # Dots here share the memory space with original ones.
 track_lines = []     # Lines of the track calculated from the dots list.
 start_position = []  # Start position cordinates for the car.
+
 
 def load_track() -> None:
     """Load an existing  track."""
@@ -68,6 +73,19 @@ def load_track() -> None:
         else:
             directory_to_use = directory
             print("Loaded the track.\n")
+
+def count_track_and_praise() -> list:
+    """Count and return normal track lines and praise."""
+    track = []  # Exported track lines.
+    praise = []  # Exported praise lines.
+    # Track lines.
+    for i in range(-2, len(track_lines)-2, 2):
+        track.append( [track_lines[i],   track_lines[i+2]] )
+        track.append( [track_lines[i+1], track_lines[i+3]] )
+    # Praise lines.
+    for i in range(0, len(track_lines), 2):
+        praise.append( [track_lines[i], track_lines[i+1]] )
+    return track, praise
 
 def save() -> None:
     """Save data, if fail output the lists."""
@@ -121,6 +139,20 @@ def select_dot() -> None:
             break
     time.sleep(button_delay)
 
+def select_rectangle() -> None:
+    """Select dots using a rectangle."""
+    mouse_position = list(pg.mouse.get_pos())
+    if len(selection_rectangle):
+        x1, y1 = selection_rectangle
+        x2, y2 = mouse_position
+        dot_in_rect = lambda dot: (min(x1,x2) < dot[0] < max(x1,x2)) and (min(y1,y2) < dot[1] < max(y1,y2))
+        for dot in dots:
+            if dot_in_rect(dot) and dot not in chosen_dots: chosen_dots.append(dot)
+        selection_rectangle.clear()
+    else:
+        selection_rectangle.extend(mouse_position)
+    time.sleep(button_delay)
+
 def select_all() -> None:
     """Select or unselect all dots."""
     if chosen_dots == dots:
@@ -145,7 +177,11 @@ def resize_dots(size: int) -> None:
 
 def escape() -> None:
     """Escape an uncomfortable situation."""
-    chosen_dots.clear()
+    if len(selection_rectangle):
+        selection_rectangle.clear()
+    else:
+        chosen_dots.clear()
+    time.sleep(button_delay)
 
 def count_track_lines() -> None:
     """Count track_lines."""
@@ -176,6 +212,7 @@ def draw_everything() -> None:
     chosen_size = dot_radius * 7/5
     track_size  = dot_radius * 3/5
     start_size  = dot_radius * 3
+    # Dots.
     for el in dots: pg.draw.circle(main_window, (255,100,100), el, dot_radius)
     for el in chosen_dots: pg.draw.circle(main_window, (255,255,100), el, chosen_size)
     indent = 0 if connect_ends else 2  # Indent determines whether to draw some items or not.
@@ -183,25 +220,18 @@ def draw_everything() -> None:
         pg.draw.circle(main_window, (255,100,255), track_lines[i], track_size)
     if len(start_position):
         pg.draw.circle(main_window, (150,150,255), start_position, start_size) 
-
+    # Track.
     for i in range(indent, len(track_lines), 2):            # Praise lines.
         pg.draw.line(main_window, (255,200,255), track_lines[i], track_lines[i+1], 1)
     for i in range(-2+indent*2, len(track_lines)-2, 2):     # Track lines.
         pg.draw.line(main_window, (100,255,255), track_lines[i],   track_lines[i+2], 1)
         pg.draw.line(main_window, (100,255,255), track_lines[i+1], track_lines[i+3], 1)
-
-def count_track_and_praise() -> list:
-    """Count and return normal track lines and praise."""
-    track = []  # Exported track lines.
-    praise = []  # Exported praise lines.
-    # Track lines.
-    for i in range(-2, len(track_lines)-2, 2):
-        track.append( [track_lines[i],   track_lines[i+2]] )
-        track.append( [track_lines[i+1], track_lines[i+3]] )
-    # Praise lines.
-    for i in range(0, len(track_lines), 2):
-        praise.append( [track_lines[i], track_lines[i+1]] )
-    return track, praise
+    # Selection rectangle.
+    if len(selection_rectangle):  # pygame.draw.rect() is awkward.
+        x1, y1 = selection_rectangle
+        x2, y2 = pg.mouse.get_pos()
+        rect = [[x1, y1], [x1, y2], [x2, y2], [x2, y1]]  # Dots of the suare.
+        for i in range(4): pg.draw.line(main_window, (150,255,150), rect[-i], rect[-i-1], 1)
 
 
 load_track()
@@ -225,10 +255,13 @@ while executing:
         save()                                              # Save.
     elif keys[pg.K_ESCAPE]:
         escape()                                            # Escape.
+
     elif keys[add_dot_button]:
         add_dot()                                           # Add dot.
     elif keys[select_dot_button]:
         select_dot()                                        # Select dot.
+    elif keys[select_rectangle_button]:
+        select_rectangle()                                  # Select rectangle.
     elif keys[delete_dot_button] or keys[pg.K_DELETE]:
         delete_dot()                                        # Delete dot.
     elif keys[connect_ends_button]:
@@ -237,6 +270,7 @@ while executing:
     elif keys[set_start_pos_button]:
         start_position = pg.mouse.get_pos()                 # Set start pos.
         time.sleep(button_delay)
+
     elif keys[load_track_button]:
         choice = input("Save current track? Y/n: ")
         if choice not in ["n", "no", "No", "N"]:
