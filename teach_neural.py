@@ -14,14 +14,14 @@ cars_number = 200   # 100 will do, but 200 is much better, 400 is great but take
 neural_structure = [8,6,6,4] # 8 inputs, 2 hidden layers with 6 nerons, 4 outputs.
 inherit = 5         # How many of the best cars will be in the next gen.
 distance = 300      # How far the car will see (in pixels).
-turn_coef = 0.1     # The differrence between outputs to turn.
+turn_coef = 0.1    # The differrence between outputs to turn.
 move_coef = 0.2     # The differrence between outputs to move.
 turn_speed = 15     # Turn speed in degrees per frame, 15 is ok.
 acceleration = 2    # Accel of the car, 2 is 0.2 pixels per frame.
 max_speed = 120     # Max speed, 120 is 12 pixels per frame.
 max_time = FPS * 30 # Used to limit the time of the car life.
 score_time_limit = FPS * 2 # Used to kill non productive cars.
-car_sprite = pg.transform.smoothscale(pg.image.load("car.png"), (30,15))
+car_sprite = pg.transform.smoothscale(pg.image.load("Images\\car.png"), (30,15))
 # ^ Car img should be faced right, angle can be changed in the defaults(), img is resized to 30x15 pixels.
 # AUTO SETTINGS
 car_front = car_sprite.get_rect().width/2
@@ -33,9 +33,10 @@ generation = 0
 # Making a degree version of math sin and cos.
 def sin(angle):  return math.sin(math.radians(angle))
 def cos(angle):  return math.cos(math.radians(angle))
+
 # Loading data.
-with open("data.json", "r") as file:
-    track_lines, praise = json.load(file)
+with open("tracks\\track.json", "r") as file:
+    start_position, track_lines, praise = json.load(file)[:3]
 
 
 class Car():
@@ -49,7 +50,7 @@ class Car():
     def defaults(self) -> None:
         """Set car variables to defaults."""
         self.angle = 180
-        self.r = car_sprite.get_rect(center=(956, 953))
+        self.r = car_sprite.get_rect(center=(start_position))
         self.scored = []
         self.score = 0
         self.speed = 0
@@ -182,9 +183,9 @@ class Car():
             self.angle = (self.angle-turn_speed)%360 # %360 to normalize the angle.
         elif turn_diff < -turn_coef:
             self.angle = (self.angle+turn_speed)%360
-        # Float causes troubles, rounding the number and transforming it to int
-        self.r.centerx += int(round(cos(self.angle)*self.speed/10, 0)) # ^  to remove
-        self.r.centery -= int(round(sin(self.angle)*self.speed/10, 0)) # ^ .0 should do.
+        # Float causes troubles, rounding the number should do.
+        self.r.centerx += round(cos(self.angle)*self.speed/10)
+        self.r.centery -= round(sin(self.angle)*self.speed/10)
         # In case the car was rotated, we need to get a new rect with the center of the previous one.
         self.r = pg.transform.rotate(car_sprite, self.angle).get_rect(center=self.r.center)
 
@@ -204,9 +205,9 @@ class Car():
 if __name__ == "__main__":
     W, H = 1920, 1080 # Width and height of the interface window.
     main_window = pg.display.set_mode((W, H)) # Initializing graphic system.
-    background = pg.image.load("background.png") # The background.
-    # A blank background may be loaded by uncommenting next line.
-    #background = pg.Surface((W,H)); background.fill((30,30,30))
+    # A custom background may be loaded by uncommenting the next line.
+    # background = pg.image.load("Images\\background.png") # The background.
+    background = pg.Surface((W,H)); background.fill((60,60,60))
 
     # Initializing cars.
     for i in range(cars_number):
@@ -218,8 +219,8 @@ if __name__ == "__main__":
     while True:
         main_window.blit(background, (0,0)) # Drawing background over previous gen cars.
         # Next 2 lines blit praise and track lines.
-        for el in praise: pg.draw.line(main_window, (255,150,50), el[0], el[1], 1)
-        for el in track_lines: pg.draw.line(main_window, (100,255,100), el[0], el[1], 1)
+        for el in praise: pg.draw.line(main_window, (255,200,255), el[0], el[1], 1)
+        for el in track_lines: pg.draw.line(main_window, (100,255,255), el[0], el[1], 1)
 
         generation += 1
         for el in cars:
